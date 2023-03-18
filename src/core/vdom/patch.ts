@@ -436,12 +436,15 @@ export function createPatchFunction(backend) {
       checkDuplicateKeys(newCh)
     }
 
+    // while循环，直到遍历更新完成新节点数组或旧节点数组
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      // 前两个判断都是基于下面的5.2.1中的更新标记位，当标记位undefined时，证明更新过了可以跳过（改变索引）
       if (isUndef(oldStartVnode)) {
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
       } else if (isUndef(oldEndVnode)) {
         oldEndVnode = oldCh[--oldEndIdx]
       } else if (sameVnode(oldStartVnode, newStartVnode)) {
+        // 1. 头头比对，相同的更新，并且新旧节点都向右一位
         patchVnode(
           oldStartVnode,
           newStartVnode,
@@ -452,6 +455,7 @@ export function createPatchFunction(backend) {
         oldStartVnode = oldCh[++oldStartIdx]
         newStartVnode = newCh[++newStartIdx]
       } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        // 2. 尾尾比对，相同的更新，并且新旧节点都向左一位
         patchVnode(
           oldEndVnode,
           newEndVnode,
@@ -462,7 +466,7 @@ export function createPatchFunction(backend) {
         oldEndVnode = oldCh[--oldEndIdx]
         newEndVnode = newCh[--newEndIdx]
       } else if (sameVnode(oldStartVnode, newEndVnode)) {
-        // Vnode moved right
+        // 3. 头尾比对，相同的更新且移动当前最尾部，并且旧节点向右一位、新节点向左一位
         patchVnode(
           oldStartVnode,
           newEndVnode,
@@ -479,7 +483,7 @@ export function createPatchFunction(backend) {
         oldStartVnode = oldCh[++oldStartIdx]
         newEndVnode = newCh[--newEndIdx]
       } else if (sameVnode(oldEndVnode, newStartVnode)) {
-        // Vnode moved left
+        // 4. 尾头比对，相同的更新且移动当前最前部，并且旧节点向左一位、新节点向右一位
         patchVnode(
           oldEndVnode,
           newStartVnode,
@@ -492,13 +496,17 @@ export function createPatchFunction(backend) {
         oldEndVnode = oldCh[--oldEndIdx]
         newStartVnode = newCh[++newStartIdx]
       } else {
+        /**
+         * 5. 寻找新的头节点是否在旧节点数组中
+         */
+        // 通过创建一个旧节点数组的key:index映射来提升寻找性能
         if (isUndef(oldKeyToIdx))
           oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx)
         if (isUndef(idxInOld)) {
-          // New element
+          // 5.1 不存在则新增节点，需要新增到当前旧开始节点前
           createElm(
             newStartVnode,
             insertedVnodeQueue,
@@ -511,6 +519,7 @@ export function createPatchFunction(backend) {
         } else {
           vnodeToMove = oldCh[idxInOld]
           if (sameVnode(vnodeToMove, newStartVnode)) {
+            // 5.2 存在且符合sameVnode则更新且移动节点，移动的位置是当前旧开始节点前
             patchVnode(
               vnodeToMove,
               newStartVnode,
@@ -518,6 +527,7 @@ export function createPatchFunction(backend) {
               newCh,
               newStartIdx
             )
+            // 5.2.1 先标记旧的节点已更新，方便当遍历该旧节点时可以跳过
             oldCh[idxInOld] = undefined
             canMove &&
               nodeOps.insertBefore(
@@ -526,7 +536,7 @@ export function createPatchFunction(backend) {
                 oldStartVnode.elm
               )
           } else {
-            // same key but different element. treat as new element
+            // 5.3 存在且不符合sameVnode则新增节点
             createElm(
               newStartVnode,
               insertedVnodeQueue,
@@ -541,6 +551,11 @@ export function createPatchFunction(backend) {
         newStartVnode = newCh[++newStartIdx]
       }
     }
+    
+    // 6.新增或删除剩余的没更新节点
+    // 通过上面的循环后，跳出循环的有三种：1.旧更新完毕，新没更新完 2.新更新完毕，旧没更新完 3. 新旧同时更新完毕
+    // 1、3两种我们都归到同一种，即oldStartIdx > oldEndIdx，新增剩余的新节点（只是第3种不会遍历罢了）
+    // 而第2种则是：newStartIdx > newEndIdx，移除剩余的旧节点
     if (oldStartIdx > oldEndIdx) {
       refElm = isUndef(newCh[newEndIdx + 1]) ? null : newCh[newEndIdx + 1].elm
       addVnodes(
