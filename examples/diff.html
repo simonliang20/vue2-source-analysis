@@ -1,49 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Vue-diff算法测试</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-  <meta
-    http-equiv="X-UA-Compatible"
-    content="ie=edge"
-  >
-  <title>Vue-diff算法测试</title>
-</head>
+  <body>
+    <script src="../../dist/vue.js"></script>
 
-<body>
-  <script src="../../dist/vue.js"></script>
-
-  <div id="app">
-    <button @click="onClick">更新数组</button>
-    <div
-      v-for="item of arr"
-      :key="item"
-    >
-      {{ item }}
+    <div id="app">
+        <p v-for="item of arr" :key="item">{{ item }}</p>
     </div>
-  </div>
 
-  <script>
-    const { createApp, ref } = Vue
-
-    new Vue({
-      el: '#app',
-      data () {
-        return {
-          arr: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    <script>
+      new Vue({
+        el: '#app',
+        data() {
+          return {
+            arr: ['a', 'b', 'c', 'd', 'e', 'f']
+          }
+        },
+        mounted() {
+          this.arr = ['b', 'c', 'd', 'f', 'a', 'e']
         }
-      },
-      methods: {
-        onClick () {
-          this.arr = ['a', 'b', 'e', 'c', 'd', 'h', 'f', 'g']
-        }
-      }
-    })
-  </script>
-</body>
-
+      })
+    </script>
+  </body>
 </html>
